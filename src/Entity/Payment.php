@@ -31,6 +31,9 @@ class Payment
     #[ORM\JoinColumn(nullable: false)]
     private ?CreditCard $creditCard = null;
 
+    #[ORM\Column]
+    private ?\DateTimeImmutable $createdAt = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -92,6 +95,19 @@ class Payment
     public function setCreditCard(?CreditCard $creditCard): static
     {
         $this->creditCard = $creditCard;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    #[ORM\PrePersist]
+    public function setCreatedAt(): static
+    {
+        $this->createdAt = new \DateTimeImmutable('now');
 
         return $this;
     }
