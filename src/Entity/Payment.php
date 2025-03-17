@@ -34,6 +34,9 @@ class Payment
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $refundAmount = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -108,6 +111,18 @@ class Payment
     public function setCreatedAt(): static
     {
         $this->createdAt = new \DateTimeImmutable('now');
+
+        return $this;
+    }
+
+    public function getRefundAmount(): ?string
+    {
+        return $this->refundAmount;
+    }
+
+    public function setRefundAmount(?string $refundAmount): static
+    {
+        $this->refundAmount = $refundAmount;
 
         return $this;
     }
