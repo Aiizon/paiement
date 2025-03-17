@@ -21,6 +21,12 @@
                     <li class="d-flex flex-row align-items-center justify-content-center nav-item">
                         <a class="nav-link text-center" href="{# path('app_payments') #}">Mes paiements</a>
                     </li>
+                    {% if is_granted('ROLE_ADMIN') %}
+                        <hr class="vr dark-subtle mx-2"/>
+                        <li class="d-flex flex-row align-items-center justify-content-center nav-item">
+                            <a class="nav-link text-center" href="{{ path('app_admin') }}">Administration</a>
+                        </li>
+                    {% endif %}
                 {% else %}
                     <li class="d-flex flex-row align-items-center justify-content-center nav-item">
                         <a class="nav-link" href="{{ path('app_login') }}">Connection</a>
