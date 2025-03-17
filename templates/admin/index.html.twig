@@ -3,5 +3,26 @@
 {% block title %}Paiements{% endblock %}
 
 {% block body %}
+    <div class="d-flex flex-column justify-content-center">
+        <h2 class="text-center">Liste des paiements</h2>
 
+        <div class="d-flex flex-row flex-wrap justify-content-center gap-4">
+            {% for payment in payments %}
+                <div class="card" style="width: 18rem;">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ payment.id }}</h5>
+                        <p class="card-text">{{ payment.user.userIdentifier }}</p>
+                        <p class="card-text">{{ payment.product.name }}</p>
+                        <p class="card-text">{{ product.price }}</p>
+                        <p class="card-text">{{ product.createdAt }}</p>
+                        {% if product.isRefunded == false %}
+                            <a href="{# path('app_payment_refund', {id: payment.id}) #}" class="btn btn-outline-dark">Rembourser</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <p class="text-center">Aucun paiement trouvé.</p>
+            {% endfor %}
+        </div>
+    </div>
 {% endblock %}

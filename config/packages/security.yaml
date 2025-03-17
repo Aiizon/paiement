@@ -28,4 +28,4 @@ security:
 
     access_control:
     # Exemple d'accès restreint à une section de l'application
-    # - { path: ^/admin, roles: ROLE_ADMIN }
+     - { path: ^/admin, roles: ROLE_ADMIN }

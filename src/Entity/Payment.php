@@ -17,7 +17,7 @@ class Payment
     private ?string $amount = null;
 
     #[ORM\Column]
-    private ?bool $isRefunded = null;
+    private ?bool $isRefunded = false;
 
     #[ORM\ManyToOne(inversedBy: 'payments')]
     #[ORM\JoinColumn(nullable: false)]
