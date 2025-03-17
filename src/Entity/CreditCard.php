@@ -81,12 +81,12 @@ class CreditCard
         return
             substr($this->number, 0, 4) .
             ' **** **** ' .
-            substr($this->number, 8, 4);
+            substr($this->number, 15, 4);
     }
 
     public function getFilteredNumberEnd(): ?string
     {
-        return '**** **** **** ' . substr($this->number, 8, 4);
+        return '**** **** **** ' . substr($this->number, 15, 4);
     }
 
     public function getCvv(): ?string

@@ -13,6 +13,8 @@
                         <th scope="col">N° de commande</th>
                         <th scope="col">Produit</th>
                         <th scope="col">Montant</th>
+                        <th scope="col">Carte de crédit</th>
+                        <th scope="col">Date d'expiration</th>
                         <th scope="col">Date de paiement</th>
                         <th scope="col">Remboursé ?</th>
                     </tr>
@@ -23,6 +25,8 @@
                             <td>{{ payment.id }}</td>
                             <td>{{ payment.product.name }}</td>
                             <td>{{ payment.amount }} €</td>
+                            <td>{{ payment.creditCard.filteredNumberBeginEnd }}</td>
+                            <td>{{ payment.creditCard.expirationMonth }}/{{ payment.creditCard.expirationYear }}</td>
                             <td>{{ payment.createdAt|date('d/m/Y') }}</td>
                             <td>
                                 {% if payment.isRefunded == true %}
