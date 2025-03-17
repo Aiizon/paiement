@@ -1,0 +1,35 @@
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top p-4 bg-dark">
+    <div class="d-flex flex-row justify-content-evenly gap-4 container-fluid">
+        <a class="navbar-brand" href="{{ path('app_home') }}">
+            <img src="{# asset('images/icon.png') #}" alt="" width="30" class="d-inline-block align-text-top rounded-1">
+            EZPay
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="d-flex flex-row align-items-center justify-content-center nav-item">
+                    <a class="nav-link" href="{{ path('app_home') }}">Accueil</a>
+                </li>
+
+                {% if is_granted('ROLE_USER') %}
+                    <li class="d-flex flex-row align-items-center justify-content-center nav-item">
+                        <a class="nav-link" href="{{ path('app_logout') }}">Déconnection</a>
+                    </li>
+                    <hr class="vr bg-dark-subtle mx-2"/>
+                    <li class="d-flex flex-row align-items-center justify-content-center nav-item">
+                        <a class="nav-link text-center" href="{# path('app_payments') #}">Mes paiements</a>
+                    </li>
+                {% else %}
+                    <li class="d-flex flex-row align-items-center justify-content-center nav-item">
+                        <a class="nav-link" href="{{ path('app_login') }}">Connection</a>
+                    </li>
+                    <li class="d-flex flex-row align-items-center justify-content-center nav-item">
+                        <a class="nav-link" href="{{ path('app_register') }}">Inscription</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>

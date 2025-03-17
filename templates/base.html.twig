@@ -14,6 +14,9 @@
         {% endblock %}
     </head>
     <body>
-        {% block body %}{% endblock %}
+        {% include 'header.html.twig' %}
+        <main style="margin-top: 15vh;">
+            {% block body %}{% endblock %}
+        </main>
     </body>
 </html>
