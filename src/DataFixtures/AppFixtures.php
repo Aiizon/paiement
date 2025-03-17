@@ -36,11 +36,11 @@ class AppFixtures extends Fixture
         $manager->flush();
 
         $products = [
-            (new Product())->setName('Oupi Goupi')         ->setPrice('999.99€'),
-            (new Product())->setName('Mastermind')         ->setPrice('14.99€'),
-            (new Product())->setName('Canard en plastique')->setPrice('9.99€'),
-            (new Product())->setName('La pomme')           ->setPrice('49.99€'),
-            (new Product())->setName('La poire')           ->setPrice('44.99€'),
+            (new Product())->setName('Oupi Goupi')         ->setPrice('999.99'),
+            (new Product())->setName('Mastermind')         ->setPrice('14.99'),
+            (new Product())->setName('Canard en plastique')->setPrice('9.99'),
+            (new Product())->setName('La pomme')           ->setPrice('49.99'),
+            (new Product())->setName('La poire')           ->setPrice('44.99'),
         ];
 
         foreach ($products as $product) {
@@ -60,7 +60,7 @@ class AppFixtures extends Fixture
         $manager->flush();
 
         $payment = (new Payment())
-            ->setAmount('999.99€')
+            ->setAmount('999.99')
             ->setUser($user)
             ->setProduct($products[0])
             ->setCreditCard($userCreditCard)
