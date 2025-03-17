@@ -1,10 +1,10 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Administration des paiements{% endblock %}
+{% block title %}Paiements{% endblock %}
 
 {% block body %}
     <div class="d-flex flex-column justify-content-center">
-        <h2 class="text-center">Administration des paiements</h2>
+        <h2 class="text-center">Liste des paiements</h2>
 
         <div class="d-flex flex-row flex-wrap justify-content-center gap-4">
             <table class="table table-striped">
@@ -14,7 +14,7 @@
                         <th scope="col">Produit</th>
                         <th scope="col">Prix</th>
                         <th scope="col">Date de paiement</th>
-                        <th scope="col">Actions</th>
+                        <th scope="col">Remboursé ?</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -25,8 +25,10 @@
                             <td>{{ payment.price }}</td>
                             <td>{{ payment.createdAt|date('d/m/Y') }}</td>
                             <td>
-                                {% if payment.isRefunded == false %}
-                                    <a href="{# path('app_admin_refund', {'id': payment.id}) #}">Rembourser</a>
+                                {% if payment.isRefunded == true %}
+                                    Oui
+                                {% else %}
+                                    Non
                                 {% endif %}
                             </td>
                         </tr>
