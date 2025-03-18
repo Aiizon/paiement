@@ -125,7 +125,7 @@ final class PaymentsController extends AbstractController
         $aesKey = $this->encryptionService->decryptAESKeyWithPrivateKey($encryptedNumber);
 
         // Déchiffrement du numéro de carte avec la clé AES
-        $decryptedCardNumber = $this->encryptionService->decryptWithAES($encryptedNumber, $aesKey);
+//        $decryptedCardNumber = $this->encryptionService->decryptWithAES($encryptedNumber, $aesKey);
 
         // Sauvegarder le paiement avec les données déchiffrées
         $payment = (new Payment())

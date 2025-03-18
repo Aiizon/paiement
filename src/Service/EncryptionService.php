@@ -6,30 +6,37 @@ use App\Entity\User;
 use Random\RandomException;
 use Defuse\Crypto\Crypto;
 use Defuse\Crypto\Key;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use RuntimeException;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class EncryptionService
 {
-    private KeyManagerService $keyManagerService;
-    private false|\OpenSSLAsymmetricKey $privateKey; // Clé privée RSA pour déchiffrer la clé AES
+    private ParameterBagInterface $parameterBag;
+    private KeyManagerService     $keyManagerService;
+    private string                $privateKey; // Clé privée RSA pour déchiffrer la clé AES
 
     public function __construct(
-        KeyManagerService $keyManagerService,
-        #[Autowire('%env(RSA_PRIVATE_KEY_PATH)%')] string $privateKeyPath
+        ParameterBagInterface $parameterBag,
+        KeyManagerService     $keyManagerService
     ) {
+        $this->parameterBag      = $parameterBag;
         $this->keyManagerService = $keyManagerService;
 
-        // Charger la clé privée depuis un fichier
-        $privateKeyContent = file_get_contents($privateKeyPath);
+        $this->loadPrivateKey();
+    }
 
-        if (!$privateKeyContent) {
-            throw new \RuntimeException("Impossible de lire la clé privée à l'emplacement : $privateKeyPath");
+    private function loadPrivateKey(): void
+    {
+        $privateKeyPath = $this->parameterBag->get('kernel.project_dir') . '/' . $_ENV['RSA_PRIVATE_KEY_PATH'];
+
+        if (!file_exists($privateKeyPath)) {
+            throw new RuntimeException('Clé privée RSA introuvable à : ' . $privateKeyPath);
         }
 
-        $this->privateKey = openssl_pkey_get_private($privateKeyContent);
+        $this->privateKey = file_get_contents($privateKeyPath);
 
-        if (!$this->privateKey) {
-            throw new \RuntimeException("La clé privée RSA est invalide ou corrompue.");
+        if ($this->privateKey === false) {
+            throw new RuntimeException('Clé privée RSA illisible ou corrompue');
         }
     }
 
@@ -82,7 +89,7 @@ class EncryptionService
         // Déchiffre la clé AES avec la clé privée RSA
         $decryptedKey = '';
         if (openssl_private_decrypt(base64_decode($encryptedAESKey), $decryptedKey, $this->privateKey) === false) {
-            throw new \RuntimeException('Échec du déchiffrement de la clé AES.');
+            throw new RuntimeException('Échec du déchiffrement de la clé AES.');
         }
 
         return $decryptedKey;
