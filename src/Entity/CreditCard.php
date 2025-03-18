@@ -51,13 +51,9 @@ class CreditCard
     #[ORM\OneToMany(targetEntity: Payment::class, mappedBy: 'creditCard')]
     private Collection $payments;
 
-    #[ORM\Column(length: 500)]
-    private ?string $holderName = null;
-
     #[ORM\ManyToOne(inversedBy: 'creditCards')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
-
 
     public function __construct()
     {
@@ -203,18 +199,6 @@ class CreditCard
                 $payment->setCreditCard(null);
             }
         }
-
-        return $this;
-    }
-
-    public function getHolderName(): ?string
-    {
-        return $this->holderName;
-    }
-
-    public function setHolderName(string $holderName): static
-    {
-        $this->holderName = $holderName;
 
         return $this;
     }

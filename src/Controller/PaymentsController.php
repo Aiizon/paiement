@@ -3,17 +3,20 @@
 
 namespace App\Controller;
 
+use App\DTO\CreditCardDTO;
 use App\Entity\CreditCard;
 use App\Entity\Payment;
 use App\Form\CreditCardFormType;
 use App\Repository\PaymentRepository;
 use App\Repository\ProductRepository;
 use App\Repository\CreditCardRepository;
+use App\Repository\UserRepository;
+use App\Service\CreditCardService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class PaymentsController extends AbstractController
@@ -32,11 +35,12 @@ final class PaymentsController extends AbstractController
     #[Route('/payment/checkout/{id}', name: 'app_payment_checkout')]
     #[IsGranted('ROLE_USER')]
     public function checkout(
-        int $id,
-        ProductRepository $productRepository,
-        CreditCardRepository $creditCardRepository,
-        Request $request,
-        EntityManagerInterface $em
+        int                    $id,
+        Request                $request,
+        ProductRepository      $productRepository,
+        UserRepository         $userRepository,
+        CreditCardRepository   $creditCardRepository,
+        CreditCardService      $creditCardService,
     ): Response {
         $product = $productRepository->find($id);
 
@@ -44,36 +48,48 @@ final class PaymentsController extends AbstractController
             throw $this->createNotFoundException('Produit introuvable.');
         }
 
+        $user = $userRepository->find($this->getUser());
+
         // Récupérer les cartes existantes de l'utilisateur
-        $creditCards = $creditCardRepository->findBy(['user' => $this->getUser()]);
+        $creditCards = $creditCardRepository->findBy(['user' => $user]);
 
         // Création du formulaire
-        $creditCard = new CreditCard();
-        $form = $this->createForm(CreditCardFormType::class, $creditCard);
+        $dto  = new CreditCardDTO();
+        $form = $this->createForm(CreditCardFormType::class, $dto);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $creditCard->setUser($this->getUser());
-            $em->persist($creditCard);
-            $em->flush();
+            $dto = $form->getData();
 
-            return $this->redirectToRoute('app_payment_process', ['id' => $product->getId()]);
+            $creditCard = $creditCardService->store(
+                $dto->number,
+                $dto->cvv,
+                $dto->holderName,
+                $dto->expirationMonth,
+                $dto->expirationYear,
+                $user
+            );
+
+            return $this->redirectToRoute('app_payment_process', [
+                'id'     => $product->getId(),
+                'cardId' => $creditCard->getId(),
+            ]);
         }
 
         return $this->render('payments/checkout.html.twig', [
-            'product' => $product,
+            'product'     => $product,
             'creditCards' => $creditCards,
-            'form' => $form->createView(),
+            'form'        => $form->createView(),
         ]);
     }
 
     #[Route('/payment/process/{id}', name: 'app_payment_process')]
     #[IsGranted('ROLE_USER')]
     public function processPayment(
-        int $id,
-        ProductRepository $productRepository,
-        CreditCardRepository $creditCardRepository,
-        Request $request,
+        int                    $id,
+        Request                $request,
+        ProductRepository      $productRepository,
+        CreditCardRepository   $creditCardRepository,
         EntityManagerInterface $em
     ): Response {
         $product = $productRepository->find($id);
@@ -82,19 +98,26 @@ final class PaymentsController extends AbstractController
             throw $this->createNotFoundException('Produit introuvable.');
         }
 
-        $creditCardId = $request->request->get('creditCard');
-        $creditCard = $creditCardRepository->find($creditCardId);
+        $creditCardId = $request->get('cardId');
 
-        if (!$creditCard || $creditCard->getUser() !== $this->getUser()) {
-            throw $this->createNotFoundException('Carte de crédit introuvable ou non autorisée.');
+        if ($creditCardId) {
+            $creditCard = $creditCardRepository->find($creditCardId);
+
+            if (!$creditCard || $creditCard->getUser() !== $this->getUser()) {
+                throw $this->createNotFoundException('Carte de crédit introuvable ou non autorisée.');
+            }
+        } else {
+            $this->addFlash('error', 'Veuillez sélectionner une carte de crédit existante.');
+            return $this->redirectToRoute('app_payment_checkout', ['id' => $id]);
         }
 
-        $payment = new Payment();
-        $payment->setUser($this->getUser());
-        $payment->setProduct($product);
-        $payment->setCreditCard($creditCard);
-        $payment->setAmount($product->getPrice());
-        $payment->setCreatedAt(); // Set the createdAt field
+        $payment = (new Payment())
+            ->setUser($this->getUser())
+            ->setProduct($product)
+            ->setCreditCard($creditCard)
+            ->setAmount($product->getPrice())
+            ->setCreatedAt()
+        ;
 
         $em->persist($payment);
         $em->flush();

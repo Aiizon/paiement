@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\CreditCard;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 
 class CreditCardService
@@ -26,6 +27,7 @@ class CreditCardService
         string $holderName,
         string $expirationMonth,
         string $expirationYear,
+        User   $user
     ): CreditCard {
         $number = preg_replace('/\D/', '', $number);
         $first4 = substr($number, 0, 4);
@@ -42,6 +44,7 @@ class CreditCardService
             ->setExpirationYear($expirationYear)
             ->setEncryptedHolderName($this->encryptionService->encrypt($holderName))
             ->setCardType($type)
+            ->setUser($user)
         ;
 
         $this->entityManager->persist($creditCard);

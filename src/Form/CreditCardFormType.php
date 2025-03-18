@@ -2,7 +2,7 @@
 
 namespace App\Form;
 
-use App\Entity\CreditCard;
+use App\DTO\CreditCardDTO;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
@@ -43,7 +43,7 @@ class CreditCardFormType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class' => CreditCard::class,
+            'data_class' => CreditCardDTO::class,
         ]);
     }
 }

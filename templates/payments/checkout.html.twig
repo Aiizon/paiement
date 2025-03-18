@@ -11,8 +11,8 @@
         <form method="post" action="{{ path('app_payment_process', {id: product.id}) }}">
             {% for card in creditCards %}
                 <label>
-                    <input type="radio" name="creditCard" value="{{ card.id }}" required>
-                    {{ card.holderName }} - **** **** **** {{ card.number|slice(-4) }} (Expire {{ card.expirationMonth }}/{{ card.expirationYear }})
+                    <input type="radio" name="cardId" value="{{ card.id }}" required>
+                    {# {{ card.holderName }} - #}**** **** **** {{ card.last4 }} (Expire {{ card.expirationMonth }}/{{ card.expirationYear }})
                 </label><br>
             {% endfor %}
             <button type="submit">Payer avec cette carte</button>
@@ -23,7 +23,6 @@
 
     <h3>Ou entrez une nouvelle carte</h3>
     {{ form_start(form) }}
-    {{ form_widget(form) }}
-    <button type="submit">Enregistrer et payer</button>
+        {{ form_widget(form) }}
     {{ form_end(form) }}
 {% endblock %}

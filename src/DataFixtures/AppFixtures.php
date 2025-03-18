@@ -60,6 +60,7 @@ class AppFixtures extends Fixture
             'John Doe',
             '8',
             '2029',
+            $user
         );
 
         $payment = (new Payment())
