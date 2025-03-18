@@ -2,51 +2,51 @@
 
 namespace App\Service;
 
-use Exception;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use App\Entity\User;
+use Random\RandomException;
 
 class EncryptionService
 {
-    private string $key;
+    private KeyManagerService $keyManagerService;
 
-    public function __construct(
-        #[Autowire('%env(ENCRYPTION_KEY)%')]
-        ?string $key
-    )
-    {
-        $this->key = $key ? base64_decode($key) : sodium_crypto_secretbox_keygen();
+    public function __construct(KeyManagerService $keyManagerService) {
+        $this->keyManagerService = $keyManagerService;
     }
 
-    public function encrypt(string $plainText): ?string
+    /**
+     * @throws RandomException
+     */
+    public function encrypt(string $plainText, User $user): ?string
     {
-        try {
-            // Génère un nombre à usage unique pour rendre le chiffrement unique
-            // 24 bytes est la taille recommandée pour Sodium
-            $nonce = random_bytes(24);
-            // Chiffre le texte brut
-            $cipherText = sodium_crypto_secretbox($plainText, $nonce, $this->key);
-        } catch (Exception $e) {
-            return null;
-        }
+        $userKey = $this->keyManagerService->getUserKey($user);
 
-        return base64_encode($nonce . $cipherText);
+        $iv = random_bytes(16);
+        $encryptedData = openssl_encrypt(
+            $plainText,
+            'aes-256-cbc',
+            $userKey,
+            0,
+            $iv
+        );
+
+        return base64_encode($encryptedData) . '|' . base64_encode($iv);
     }
 
-    public function decrypt(string $encodedText): ?string
+    /**
+     * @throws RandomException
+     */
+    public function decrypt(string $encodedText, User $user): ?string
     {
-        $decodedText = base64_decode($encodedText);
-        // Récupère la chaîne de bytes utilisée pour chiffrer
-        $nonce = mb_substr($decodedText, 0, 24, '8bit');
-        // Récupère le texte chiffré
-        $cipherText = mb_substr($decodedText, 24, null, '8bit');
+        $userKey = $this->keyManagerService->getUserKey($user);
 
-        try {
-            // Déchiffre le texte chiffré
-            $plainText = sodium_crypto_secretbox_open($cipherText, $nonce, $this->key);
-        } catch (Exception $e) {
-            return null;
-        }
+        [$encryptedData, $iv] = explode('|', $encodedText);
 
-        return $plainText;
+        return openssl_decrypt(
+            base64_decode($encryptedData),
+            'aes-256-cbc',
+            $userKey,
+            0,
+            base64_decode($iv)
+        );
     }
 }

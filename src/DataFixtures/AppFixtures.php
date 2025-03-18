@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Service\CreditCardService;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
+use Random\RandomException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AppFixtures extends Fixture
@@ -25,6 +26,9 @@ class AppFixtures extends Fixture
         $this->creditCardService = $creditCardService;
     }
 
+    /**
+     * @throws RandomException
+     */
     public function load(ObjectManager $manager): void
     {
         $user = new User();

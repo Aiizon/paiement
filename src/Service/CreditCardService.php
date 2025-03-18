@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\CreditCard;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use Random\RandomException;
 
 class CreditCardService
 {
@@ -20,6 +21,10 @@ class CreditCardService
         $this->entityManager     = $entityManager;
     }
 
+
+    /**
+     * @throws RandomException
+     */
     public function store
     (
         string $number,
@@ -36,13 +41,13 @@ class CreditCardService
         $type   = $this->detectCardType($number);
 
         $creditCard = (new CreditCard())
-            ->setEncryptedNumber($this->encryptionService->encrypt($number))
-            ->setEncryptedCvv($this->encryptionService->encrypt($cvv))
+            ->setEncryptedNumber($this->encryptionService->encrypt($number, $user))
+            ->setEncryptedCvv($this->encryptionService->encrypt($cvv, $user))
             ->setFirst4($first4)
             ->setLast4($last4)
             ->setExpirationMonth($expirationMonth)
             ->setExpirationYear($expirationYear)
-            ->setEncryptedHolderName($this->encryptionService->encrypt($holderName))
+            ->setEncryptedHolderName($this->encryptionService->encrypt($holderName, $user))
             ->setCardType($type)
             ->setUser($user)
         ;
@@ -53,19 +58,28 @@ class CreditCardService
         return $creditCard;
     }
 
-    public function getCardNumber(CreditCard $card): string
+    /**
+     * @throws RandomException
+     */
+    public function getCardNumber(CreditCard $card, User $user): string
     {
-        return $this->encryptionService->decrypt($card->getEncryptedNumber());
+        return $this->encryptionService->decrypt($card->getEncryptedNumber(), $user);
     }
 
-    public function getCardCvv(CreditCard $card): string
+    /**
+     * @throws RandomException
+     */
+    public function getCardCvv(CreditCard $card, User $user): string
     {
-        return $this->encryptionService->decrypt($card->getEncryptedCvv());
+        return $this->encryptionService->decrypt($card->getEncryptedCvv(), $user);
     }
 
-    public function getCardHolderName(CreditCard $card): string
+    /**
+     * @throws RandomException
+     */
+    public function getCardHolderName(CreditCard $card, User $user): string
     {
-        return $this->encryptionService->decrypt($card->getEncryptedHolderName());
+        return $this->encryptionService->decrypt($card->getEncryptedHolderName(), $user);
     }
 
     private function detectCardType(string $number): string
