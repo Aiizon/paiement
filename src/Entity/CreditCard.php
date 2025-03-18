@@ -19,11 +19,17 @@ class CreditCard
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $name = null;
 
-    #[ORM\Column(length: 19)]
-    private ?string $number = null;
+    #[ORM\Column(length: 255)]
+    private ?string $encryptedNumber = null;
 
-    #[ORM\Column(length: 3)]
-    private ?string $cvv = null;
+    #[ORM\Column(length: 255)]
+    private ?string $encryptedCvv = null;
+
+    #[ORM\Column(length: 4)]
+    private ?string $first4 = null;
+
+    #[ORM\Column(length: 4)]
+    private ?string $last4 = null;
 
     #[ORM\Column]
     #[Assert\Range(min: 1, max: 12)]
@@ -33,14 +39,17 @@ class CreditCard
     #[Assert\Range(min: 2000, max: 2100)]
     private ?int $expirationYear = null;
 
+    #[ORM\Column(length: 500)]
+    private ?string $encryptedHolderName = null;
+
+    #[ORM\Column(length: 50, nullable: true)]
+    private ?string $cardType = null;
+
     /**
      * @var Collection<int, Payment>
      */
     #[ORM\OneToMany(targetEntity: Payment::class, mappedBy: 'creditCard')]
     private Collection $payments;
-
-    #[ORM\Column(length: 500)]
-    private ?string $holderName = null;
 
     public function __construct()
     {
@@ -64,39 +73,74 @@ class CreditCard
         return $this;
     }
 
-    public function getNumber(): ?string
+    public function getEncryptedNumber(): ?string
     {
-        return $this->number;
+        return $this->encryptedNumber;
     }
 
-    public function setNumber(string $number): static
+    public function setEncryptedNumber(?string $encryptedNumber): static
     {
-        $this->number = $number;
+        $this->encryptedNumber = $encryptedNumber;
 
         return $this;
     }
 
-    public function getFilteredNumberBeginEnd(): ?string
+    public function getEncryptedCvv(): ?string
     {
-        return
-            substr($this->number, 0, 4) .
-            ' **** **** ' .
-            substr($this->number, 15, 4);
+        return $this->encryptedCvv;
     }
 
-    public function getFilteredNumberEnd(): ?string
+    public function setEncryptedCvv(?string $encryptedCvv): static
     {
-        return '**** **** **** ' . substr($this->number, 15, 4);
+        $this->encryptedCvv = $encryptedCvv;
+
+        return $this;
     }
 
-    public function getCvv(): ?string
+    public function getFirst4(): ?string
     {
-        return $this->cvv;
+        return $this->first4;
     }
 
-    public function setCvv(string $cvv): static
+    public function setFirst4(?string $first4): static
     {
-        $this->cvv = $cvv;
+        $this->first4 = $first4;
+
+        return $this;
+    }
+
+    public function getLast4(): ?string
+    {
+        return $this->last4;
+    }
+
+    public function setLast4(?string $last4): static
+    {
+        $this->last4 = $last4;
+
+        return $this;
+    }
+
+    public function getEncryptedHolderName(): ?string
+    {
+        return $this->encryptedHolderName;
+    }
+
+    public function setEncryptedHolderName(?string $encryptedHolderName): static
+    {
+        $this->encryptedHolderName = $encryptedHolderName;
+
+        return $this;
+    }
+
+    public function getCardType(): ?string
+    {
+        return $this->cardType;
+    }
+
+    public function setCardType(?string $cardType): static
+    {
+        $this->cardType = $cardType;
 
         return $this;
     }
@@ -151,18 +195,6 @@ class CreditCard
                 $payment->setCreditCard(null);
             }
         }
-
-        return $this;
-    }
-
-    public function getHolderName(): ?string
-    {
-        return $this->holderName;
-    }
-
-    public function setHolderName(string $holderName): static
-    {
-        $this->holderName = $holderName;
 
         return $this;
     }

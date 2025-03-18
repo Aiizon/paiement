@@ -6,6 +6,7 @@ use App\Entity\CreditCard;
 use App\Entity\Payment;
 use App\Entity\Product;
 use App\Entity\User;
+use App\Service\CreditCardService;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -13,10 +14,15 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 class AppFixtures extends Fixture
 {
     private UserPasswordHasherInterface $hasher;
+    private CreditCardService           $creditCardService;
 
-    public function __construct(UserPasswordHasherInterface $hasher)
-    {
-        $this->hasher = $hasher;
+    public function __construct
+    (
+        UserPasswordHasherInterface $hasher,
+        CreditCardService           $creditCardService
+    ) {
+        $this->hasher            = $hasher;
+        $this->creditCardService = $creditCardService;
     }
 
     public function load(ObjectManager $manager): void
@@ -48,16 +54,13 @@ class AppFixtures extends Fixture
         }
         $manager->flush();
 
-        $userCreditCard =
-            (new CreditCard())
-                ->setNumber('1234 5678 9123 4567')
-                ->setCvv('123')
-                ->setExpirationMonth(12)
-                ->setExpirationYear(2028)
-                ->setHolderName('Alain Ternette');
-        ;
-        $manager->persist($userCreditCard);
-        $manager->flush();
+        $userCreditCard = $this->creditCardService->store(
+            '4111111111111111',
+            '123',
+            'John Doe',
+            '8',
+            '2029',
+        );
 
         $payment = (new Payment())
             ->setAmount('999.99')
