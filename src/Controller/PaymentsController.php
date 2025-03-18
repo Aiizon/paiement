@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Controller;
 
 use App\DTO\CreditCardDTO;
@@ -12,6 +11,7 @@ use App\Repository\ProductRepository;
 use App\Repository\CreditCardRepository;
 use App\Repository\UserRepository;
 use App\Service\CreditCardService;
+use App\Service\EncryptionService; // Service pour déchiffrement AES
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,7 +21,14 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class PaymentsController extends AbstractController
 {
-    #[Route('/payments', name: 'app_payments')]
+    private EncryptionService $encryptionService;
+
+    public function __construct(EncryptionService $encryptionService)
+    {
+        $this->encryptionService = $encryptionService;
+    }
+
+    #[Route(path:'/payments', name: 'app_payments')]
     #[IsGranted('ROLE_USER')]
     public function index(PaymentRepository $paymentRepository): Response
     {
@@ -32,15 +39,15 @@ final class PaymentsController extends AbstractController
         ]);
     }
 
-    #[Route('/payment/checkout/{id}', name: 'app_payment_checkout')]
+    #[Route(path:'/payment/checkout/{id}', name: 'app_payment_checkout')]
     #[IsGranted('ROLE_USER')]
     public function checkout(
-        int                    $id,
-        Request                $request,
-        ProductRepository      $productRepository,
-        UserRepository         $userRepository,
-        CreditCardRepository   $creditCardRepository,
-        CreditCardService      $creditCardService,
+        int $id,
+        Request $request,
+        ProductRepository $productRepository,
+        UserRepository $userRepository,
+        CreditCardRepository $creditCardRepository,
+        CreditCardService $creditCardService
     ): Response {
         $product = $productRepository->find($id);
 
@@ -83,13 +90,13 @@ final class PaymentsController extends AbstractController
         ]);
     }
 
-    #[Route('/payment/process/{id}', name: 'app_payment_process')]
+    #[Route(path:'/payment/process/{id}', name: 'app_payment_process')]
     #[IsGranted('ROLE_USER')]
     public function processPayment(
-        int                    $id,
-        Request                $request,
-        ProductRepository      $productRepository,
-        CreditCardRepository   $creditCardRepository,
+        int $id,
+        Request $request,
+        ProductRepository $productRepository,
+        CreditCardRepository $creditCardRepository,
         EntityManagerInterface $em
     ): Response {
         $product = $productRepository->find($id);
@@ -111,12 +118,22 @@ final class PaymentsController extends AbstractController
             return $this->redirectToRoute('app_payment_checkout', ['id' => $id]);
         }
 
+        // Déchiffrer les données sensibles (par exemple, numéro de carte)
+        $encryptedNumber = $creditCard->getEncryptedNumber();  // Assurez-vous que c'est bien chiffré
+
+        // Déchiffrement de la clé AES avec la clé privée RSA
+        $aesKey = $this->encryptionService->decryptAESKeyWithPrivateKey($encryptedNumber);
+
+        // Déchiffrement du numéro de carte avec la clé AES
+        $decryptedCardNumber = $this->encryptionService->decryptWithAES($encryptedNumber, $aesKey);
+
+        // Sauvegarder le paiement avec les données déchiffrées
         $payment = (new Payment())
             ->setUser($this->getUser())
             ->setProduct($product)
             ->setCreditCard($creditCard)
             ->setAmount($product->getPrice())
-            ->setCreatedAt()
+            ->setCreatedAt(new \DateTime()) // Assurez-vous que la date soit bien définie
         ;
 
         $em->persist($payment);

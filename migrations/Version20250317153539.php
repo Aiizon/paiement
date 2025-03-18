@@ -22,7 +22,7 @@ final class Version20250317153539 extends AbstractMigration
         // this up() migration is auto-generated, please modify it to your needs
         $this->addSql('ALTER TABLE credit_card ADD user_id INT NOT NULL');
         $this->addSql('ALTER TABLE credit_card ADD CONSTRAINT FK_11D627EEA76ED395 FOREIGN KEY (user_id) REFERENCES `user` (id)');
-        $this->addSql('CREATE INDEX IDX_11D627EEA76ED395 ON credit_card (user_id)');
+        $this->addSql('CREATE INDEXgit  IDX_11D627EEA76ED395 ON credit_card (user_id)');
     }
 
     public function down(Schema $schema): void
