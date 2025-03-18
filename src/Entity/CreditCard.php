@@ -42,6 +42,11 @@ class CreditCard
     #[ORM\Column(length: 500)]
     private ?string $holderName = null;
 
+    #[ORM\ManyToOne(inversedBy: 'creditCards')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User $user = null;
+
+
     public function __construct()
     {
         $this->payments = new ArrayCollection();
@@ -163,6 +168,18 @@ class CreditCard
     public function setHolderName(string $holderName): static
     {
         $this->holderName = $holderName;
+
+        return $this;
+    }
+
+    public function getUser(): ?user
+    {
+        return $this->user;
+    }
+
+    public function setUser(?user $user): static
+    {
+        $this->user = $user;
 
         return $this;
     }

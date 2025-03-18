@@ -1,0 +1,29 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Paiement{% endblock %}
+
+{% block body %}
+    <h1 class="text-center">Paiement</h1>
+    <p>Vous êtes sur le point d'effectuer un paiement.</p>
+
+    <h3>Utiliser une carte existante</h3>
+    {% if creditCards|length > 0 %}
+        <form method="post" action="{{ path('app_payment_process', {id: product.id}) }}">
+            {% for card in creditCards %}
+                <label>
+                    <input type="radio" name="creditCard" value="{{ card.id }}" required>
+                    {{ card.holderName }} - **** **** **** {{ card.number|slice(-4) }} (Expire {{ card.expirationMonth }}/{{ card.expirationYear }})
+                </label><br>
+            {% endfor %}
+            <button type="submit">Payer avec cette carte</button>
+        </form>
+    {% else %}
+        <p>Vous n'avez pas encore enregistré de carte.</p>
+    {% endif %}
+
+    <h3>Ou entrez une nouvelle carte</h3>
+    {{ form_start(form) }}
+    {{ form_widget(form) }}
+    <button type="submit">Enregistrer et payer</button>
+    {{ form_end(form) }}
+{% endblock %}

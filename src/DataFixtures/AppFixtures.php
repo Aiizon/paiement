@@ -50,6 +50,7 @@ class AppFixtures extends Fixture
 
         $userCreditCard =
             (new CreditCard())
+                ->setUser($user)
                 ->setNumber('1234 5678 9123 4567')
                 ->setCvv('123')
                 ->setExpirationMonth(12)
