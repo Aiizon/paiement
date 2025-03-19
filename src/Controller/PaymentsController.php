@@ -111,9 +111,6 @@ final class PaymentsController extends AbstractController
         return $this->redirectToRoute('app_payments');
     }
 
-    /**
-     * @throws RandomException
-     */
     #[Route(path:'/save-card', name: 'app_save_card', methods: ['POST'])]
     #[IsGranted('ROLE_USER')]
     public function saveCard
@@ -125,35 +122,24 @@ final class PaymentsController extends AbstractController
         $data = json_decode($request->getContent(), true);
         $user = $userRepository->find($this->getUser());
 
-        $cardService->store(
-            $data['cardNumber'],
-            $data['cvv'],
-            $data['holderName'],
-            $data['expirationMonth'],
-            $data['expirationYear'],
-            $user
-        );
+        $encryptedAesKey     = $data['encryptedAESKey'];
+        $encryptedNumber     = $data['encryptedCardNumber'];
+        $encryptedCvv        = $data['encryptedCvv'];
+        $encryptedHolderName = $data['encryptedHolderName'];
+        $expirationMonth     = $data['expirationMonth'];
+        $expirationYear      = $data['expirationYear'];
 
-//        $encryptedAesKey     = $data['encryptedAESKey'];
-//        $encryptedNumber     = $data['encryptedCardNumber'];
-//        $encryptedCvv        = $data['encryptedCvv'];
-//        $encryptedHolderName = $data['encryptedHolderName'];
-//        $expirationMonth     = $data['expirationMonth'];
-//        $expirationYear      = $data['expirationYear'];
-//
-//        try {
-//            $aesKey     = $this->encryptionService->decryptAESKeyWithPrivateKey($encryptedAesKey);
-//
-//            $number     = $this->encryptionService->decryptWithAES($encryptedNumber, $aesKey);
-//            $cvv        = $this->encryptionService->decryptWithAES($encryptedCvv, $aesKey);
-//            $holderName = $this->encryptionService->decryptWithAES($encryptedHolderName, $aesKey);
-//            dd($number, $cvv, $holderName);
-//
-//            $cardService->store($number, $cvv, $holderName, $expirationMonth, $expirationYear, $user);
-//        } catch (Exception $e) {
-//            dd($e);
-//            return new JsonResponse(['success' => false, 'message' => 'Une erreur est survenue lors de l\'enregistrement de la carte de crédit.'], 500);
-//        }
+        try {
+            $aesKey     = $this->encryptionService->decryptAESKeyWithPrivateKey($encryptedAesKey);
+
+            $number     = $this->encryptionService->decryptWithAES($encryptedNumber, $aesKey);
+            $cvv        = $this->encryptionService->decryptWithAES($encryptedCvv, $aesKey);
+            $holderName = $this->encryptionService->decryptWithAES($encryptedHolderName, $aesKey);
+
+            $cardService->store($number, $cvv, $holderName, $expirationMonth, $expirationYear, $user);
+        } catch (Exception $e) {
+            return new JsonResponse(['success' => false, 'message' => 'Une erreur est survenue lors de l\'enregistrement de la carte de crédit.'], 500);
+        }
 
         return new JsonResponse(['success' => true, 'message' => 'Carte de crédit enregistrée avec succès.']);
     }

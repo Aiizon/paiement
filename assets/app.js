@@ -16,28 +16,23 @@ async function generateAESKey() {
 async function encryptAESKeyWithRSA(aesKey, publicKey) {
     const rawKey = await crypto.subtle.exportKey('raw', aesKey);
 
-    const keyHex = Array.from(new Uint8Array(rawKey))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-
     const rsaPublicKey = await crypto.subtle.importKey(
         "spki",
         pemToArrayBuffer(publicKey),
         {
             name: "RSA-OAEP",
-            hash: "SHA-256",
+            hash: "SHA-1",
         },
         false,
         ["encrypt"]
     );
 
-    const encoder = new TextEncoder();
     return await crypto.subtle.encrypt(
         {
             name: "RSA-OAEP",
         },
         rsaPublicKey,
-        encoder.encode(keyHex)
+        rawKey
     );
 }
 
@@ -61,11 +56,26 @@ async function encryptData(data, key) {
 }
 
 function pemToArrayBuffer(pem) {
-    const base64 = pem
-        .replace('-----BEGIN PUBLIC KEY-----', '')
-        .replace('-----END PUBLIC KEY-----', '')
-        .replace(/\s+/g, '');
-    return Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
+    let paddedBase64 = pem
+        .replace(/-----BEGIN.*?-----/, '')
+        .replace(/-----END.*?-----/, '')
+        .replace(/[\r\n\s]/g, '');
+
+    while (paddedBase64.length % 4 !== 0) {
+        paddedBase64 += '=';
+    }
+
+    try {
+        const binary = atob(paddedBase64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes.buffer;
+    } catch (e) {
+        console.error("Erreur lors du traîtement de la clé publique :", e);
+        throw e;
+    }
 }
 
 function arrayBufferToBase64(buffer) {
@@ -126,15 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     expirationYear:  cardForm.querySelector('#expiration_year') .value
                 };
 
-                // const result = await sendEncryptedData(cardData);
-
-                const response = await fetch("/save-card", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(cardData)
-                });
-
-                const result = await response.json();
+                const result = await sendEncryptedData(cardData);
 
                 if (result.success) {
                     cardForm.reset();
