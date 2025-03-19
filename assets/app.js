@@ -2,25 +2,27 @@ import './styles/app.scss';
 
 // Fonction pour générer une clé AES
 async function generateAESKey() {
-    const key = await crypto.subtle.generateKey(
+    return await crypto.subtle.generateKey(
         {
             name: "AES-CBC",
-            length: 256, // Clé AES de 256 bits
+            length: 256,
         },
-        true, // Permettre l'exportation de la clé
-        ["encrypt", "decrypt"] // Opérations autorisées pour cette clé
+        true,
+        ["encrypt", "decrypt"]
     );
-    return key;
 }
 
 // Fonction pour chiffrer la clé AES avec la clé publique RSA
 async function encryptAESKeyWithRSA(aesKey, publicKey) {
-    const encoder = new TextEncoder();
-    const encodedKey = encoder.encode(aesKey);
+    const rawKey = await crypto.subtle.exportKey('raw', aesKey);
+
+    const keyHex = Array.from(new Uint8Array(rawKey))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
 
     const rsaPublicKey = await crypto.subtle.importKey(
         "spki",
-        publicKey,
+        pemToArrayBuffer(publicKey),
         {
             name: "RSA-OAEP",
             hash: "SHA-256",
@@ -29,25 +31,24 @@ async function encryptAESKeyWithRSA(aesKey, publicKey) {
         ["encrypt"]
     );
 
-    const encryptedKey = await crypto.subtle.encrypt(
+    const encoder = new TextEncoder();
+    return await crypto.subtle.encrypt(
         {
             name: "RSA-OAEP",
         },
         rsaPublicKey,
-        encodedKey
+        encoder.encode(keyHex)
     );
-
-    return encryptedKey;
 }
 
 // Fonction pour chiffrer les données avec la clé AES
-async function encryptData(cardNumber, key) {
-    const iv = crypto.getRandomValues(new Uint8Array(16)); // Générer un IV aléatoire pour AES
-    const encoder = new TextEncoder();
-    const encodedData = encoder.encode(cardNumber); // Encoder les données en bytes
+async function encryptData(data, key) {
+    const iv          = crypto.getRandomValues(new Uint8Array(16)); // Générer un IV aléatoire pour AES
+    const encoder     = new TextEncoder();
+    const encodedData = encoder.encode(data); // Encoder les données en bytes
 
     // Chiffrer les données avec la clé AES en mode CBC
-    const encryptedData = await crypto.subtle.encrypt(
+    const encrypted = await crypto.subtle.encrypt(
         {
             name: "AES-CBC",
             iv: iv,
@@ -56,34 +57,94 @@ async function encryptData(cardNumber, key) {
         encodedData
     );
 
-    // Retourner les données chiffrées et l'IV
-    return {
-        encryptedData: new Uint8Array(encryptedData), // Convertir en tableau d'octets
-        iv: iv
-    };
+    return arrayBufferToBase64(encrypted) + '|' + arrayBufferToBase64(iv);
+}
+
+function pemToArrayBuffer(pem) {
+    const base64 = pem
+        .replace('-----BEGIN PUBLIC KEY-----', '')
+        .replace('-----END PUBLIC KEY-----', '')
+        .replace(/\s+/g, '');
+    return Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
+}
+
+function arrayBufferToBase64(buffer) {
+    const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
 }
 
 // Fonction principale pour envoyer les données chiffrées
-async function sendEncryptedData(cardNumber) {
-    const publicKey = await fetch('/public-key').then(res => res.text()); // Récupérer la clé publique du serveur
-    const key = await generateAESKey(); // Générer la clé AES côté client
+async function sendEncryptedData(cardData) {
+    try {
+        const publicKeyPem        = await fetch('/public-key').then(res => res.text());
 
-    // Chiffrer la clé AES avec la clé publique RSA
-    const encryptedAESKey = await encryptAESKeyWithRSA(key, publicKey);
+        const aesKey              = await generateAESKey();
 
-    const { encryptedData, iv } = await encryptData(cardNumber, key); // Chiffrer les données avec la clé AES
+        const encryptedNumber     = await encryptData(cardData.cardNumber, aesKey);
+        const encryptedCvv        = await encryptData(cardData.cvv, aesKey);
+        const encryptedHolderName = await encryptData(cardData.holderName, aesKey);
 
-    // Envoyer l'IV, les données chiffrées et la clé AES chiffrée au serveur
-    const response = await fetch("/save-payment", {
-        method: "POST",
-        body: JSON.stringify({
-            encryptedCardNumber: encryptedData,
-            iv: iv,
-            encryptedAESKey: encryptedAESKey, // Clé AES chiffrée
-        }),
-        headers: { "Content-Type": "application/json" },
-    });
+        const encryptedAESKey     = await encryptAESKeyWithRSA(aesKey, publicKeyPem);
 
-    const result = await response.json();
-    console.log(result);
+        const response = await fetch("/save-card", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                encryptedAESKey:     arrayBufferToBase64(encryptedAESKey),
+                encryptedCardNumber: encryptedNumber,
+                encryptedCvv:        encryptedCvv,
+                encryptedHolderName: encryptedHolderName,
+                expirationMonth:     cardData.expirationMonth,
+                expirationYear:      cardData.expirationYear
+            })
+        });
+
+        return await response.json();
+    } catch (error) {
+        console.error("Erreur de chiffrement :", error);
+        throw error;
+    }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const cardForm = document.querySelector('#credit-card-form');
+
+    if (cardForm) {
+        cardForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            try {
+                const cardData = {
+                    cardNumber:      cardForm.querySelector('#card_number')     .value.replace(/\s/g, ''),
+                    cvv:             cardForm.querySelector('#cvv')             .value,
+                    holderName:      cardForm.querySelector('#holder_name')     .value,
+                    expirationMonth: cardForm.querySelector('#expiration_month').value,
+                    expirationYear:  cardForm.querySelector('#expiration_year') .value
+                };
+
+                // const result = await sendEncryptedData(cardData);
+
+                const response = await fetch("/save-card", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(cardData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    cardForm.reset();
+                    window.location.reload();
+                } else {
+                    throw new Error(result.message || 'Erreur lors de l\'enregistrement de la carte');
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        });
+    }
+});

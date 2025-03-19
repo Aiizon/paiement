@@ -2,9 +2,11 @@
 
 namespace App\Controller;
 
+use LogicException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route; // Importer la bonne classe Route
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class SecurityController extends AbstractController
@@ -28,14 +30,13 @@ class SecurityController extends AbstractController
     public function logout(): void
     {
         // Cette méthode peut être vide - elle sera interceptée par le système de sécurité
-        throw new \LogicException('This method can be blank - it will be intercepted by the logout keys on your firewall.');
+        throw new LogicException('This method can be blank - it will be intercepted by the logout keys on your firewall.');
     }
 
-    #[Route("/public-keys", name: "public_key", methods:["GET"])]
-    public function getPublicKey(): Response
+    #[Route("/public-key", name: "public_key", methods:["GET"])]
+    public function getPublicKey(ParameterBagInterface $parameterBag): Response
     {
-        // Charger la clé publique (assurez-vous que la clé est stockée en sécurité)
-        $publicKey = file_get_contents('/path/to/public_key.pem'); // Chemin vers la clé publique RSA
+        $publicKey = file_get_contents($parameterBag->get('kernel.project_dir') . '/' . $_ENV['RSA_PUBLIC_KEY_PATH']);
 
         return new Response($publicKey);
     }

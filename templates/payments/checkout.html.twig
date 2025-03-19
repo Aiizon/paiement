@@ -4,25 +4,61 @@
 
 {% block body %}
     <h1 class="text-center">Paiement</h1>
-    <p>Vous êtes sur le point d'effectuer un paiement.</p>
+    <p>Vous êtes sur le point d'effectuer un paiement pour le produit {{ product.name }}.</p>
 
-    <h3>Utiliser une carte existante</h3>
+    <h3>Utiliser une carte de paiement existante</h3>
     {% if creditCards|length > 0 %}
         <form method="post" action="{{ path('app_payment_process', {id: product.id}) }}">
             {% for card in creditCards %}
                 <label>
                     <input type="radio" name="cardId" value="{{ card.id }}" required>
-                    {# {{ card.holderName }} - #}**** **** **** {{ card.last4 }} (Expire {{ card.expirationMonth }}/{{ card.expirationYear }})
+                    **** **** **** {{ card.last4 }} (Expiration :  {{ card.expirationMonth }}/{{ card.expirationYear }})
                 </label><br>
             {% endfor %}
-            <button type="submit">Payer avec cette carte</button>
+            <button type="submit" class="btn btn-success">Payer avec cette carte</button>
         </form>
     {% else %}
         <p>Vous n'avez pas encore enregistré de carte.</p>
     {% endif %}
+    <hr>
+    <h3>Ou ajoutez une carte de paiement</h3>
+    <form id="credit-card-form">
+        <div class="mb-3">
+            <label for="card_number" class="form-label">Numéro de carte bancaire</label>
+            <input type="text" class="form-control" id="card_number" required pattern="[0-9\s]{13,19}" maxlength="19">
+        </div>
 
-    <h3>Ou entrez une nouvelle carte</h3>
-    {{ form_start(form) }}
-        {{ form_widget(form) }}
-    {{ form_end(form) }}
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="expiration_month" class="form-label">Mois d'expiration</label>
+                <select class="form-select" id="expiration_month" required>
+                    {% for i in 1..12 %}
+                        <option value="{{ i }}">{{ i }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="expiration_year" class="form-label">Année d'expiration</label>
+                <select class="form-select" id="expiration_year" required>
+                    {% set currentYear = "now"|date("Y") %}
+                    {% for year in currentYear..(currentYear + 10) %}
+                        <option value="{{ year }}">{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="holder_name" class="form-label">Nom du titulaire</label>
+                <input type="text" class="form-control" id="holder_name" required>
+            </div>
+            <div class="col-md-6">
+                <label for="cvv" class="form-label">CVV</label>
+                <input type="text" class="form-control" id="cvv" required pattern="[0-9]{3,4}" maxlength="4">
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </form>
 {% endblock %}

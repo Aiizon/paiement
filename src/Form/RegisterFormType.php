@@ -18,15 +18,6 @@ class RegisterFormType extends AbstractType
     {
         $builder
             ->add('email')
-            ->add('roles', ChoiceType::class, [
-                'choices' => [
-                    'Administrateur' => 'ROLE_ADMIN',
-                    'Utilisateur' => 'ROLE_USER',
-                    // Ajoutez d'autres rôles selon vos besoins
-                ],
-                'multiple' => true, // Permet la sélection multiple
-                'expanded' => true,  // Affiche les options sous forme de cases à cocher
-            ])
             ->add('password', PasswordType::class, [
                 'mapped' => false,
                 'required' => true,

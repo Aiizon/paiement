@@ -13,7 +13,10 @@ use App\Repository\UserRepository;
 use App\Service\CreditCardService;
 use App\Service\EncryptionService; // Service pour déchiffrement AES
 use Doctrine\ORM\EntityManagerInterface;
+use Exception;
+use Random\RandomException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -43,11 +46,9 @@ final class PaymentsController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function checkout(
         int $id,
-        Request $request,
-        ProductRepository $productRepository,
-        UserRepository $userRepository,
+        ProductRepository    $productRepository,
+        UserRepository       $userRepository,
         CreditCardRepository $creditCardRepository,
-        CreditCardService $creditCardService
     ): Response {
         $product = $productRepository->find($id);
 
@@ -60,43 +61,20 @@ final class PaymentsController extends AbstractController
         // Récupérer les cartes existantes de l'utilisateur
         $creditCards = $creditCardRepository->findBy(['user' => $user]);
 
-        // Création du formulaire
-        $dto  = new CreditCardDTO();
-        $form = $this->createForm(CreditCardFormType::class, $dto);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $dto = $form->getData();
-
-            $creditCard = $creditCardService->store(
-                $dto->number,
-                $dto->cvv,
-                $dto->holderName,
-                $dto->expirationMonth,
-                $dto->expirationYear,
-                $user
-            );
-
-            return $this->redirectToRoute('app_payment_process', [
-                'id'     => $product->getId(),
-                'cardId' => $creditCard->getId(),
-            ]);
-        }
-
         return $this->render('payments/checkout.html.twig', [
             'product'     => $product,
             'creditCards' => $creditCards,
-            'form'        => $form->createView(),
         ]);
     }
 
     #[Route(path:'/payment/process/{id}', name: 'app_payment_process')]
     #[IsGranted('ROLE_USER')]
-    public function processPayment(
-        int $id,
-        Request $request,
-        ProductRepository $productRepository,
-        CreditCardRepository $creditCardRepository,
+    public function processPayment
+    (
+        int                    $id,
+        Request                $request,
+        ProductRepository      $productRepository,
+        CreditCardRepository   $creditCardRepository,
         EntityManagerInterface $em
     ): Response {
         $product = $productRepository->find($id);
@@ -118,27 +96,65 @@ final class PaymentsController extends AbstractController
             return $this->redirectToRoute('app_payment_checkout', ['id' => $id]);
         }
 
-        // Déchiffrer les données sensibles (par exemple, numéro de carte)
-        $encryptedNumber = $creditCard->getEncryptedNumber();  // Assurez-vous que c'est bien chiffré
-
-        // Déchiffrement de la clé AES avec la clé privée RSA
-        $aesKey = $this->encryptionService->decryptAESKeyWithPrivateKey($encryptedNumber);
-
-        // Déchiffrement du numéro de carte avec la clé AES
-//        $decryptedCardNumber = $this->encryptionService->decryptWithAES($encryptedNumber, $aesKey);
-
         // Sauvegarder le paiement avec les données déchiffrées
         $payment = (new Payment())
             ->setUser($this->getUser())
             ->setProduct($product)
             ->setCreditCard($creditCard)
             ->setAmount($product->getPrice())
-            ->setCreatedAt(new \DateTime()) // Assurez-vous que la date soit bien définie
+            ->setCreatedAt()
         ;
 
         $em->persist($payment);
         $em->flush();
 
         return $this->redirectToRoute('app_payments');
+    }
+
+    /**
+     * @throws RandomException
+     */
+    #[Route(path:'/save-card', name: 'app_save_card', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    public function saveCard
+    (
+        Request           $request,
+        CreditCardService $cardService,
+        UserRepository    $userRepository
+    ): JsonResponse {
+        $data = json_decode($request->getContent(), true);
+        $user = $userRepository->find($this->getUser());
+
+        $cardService->store(
+            $data['cardNumber'],
+            $data['cvv'],
+            $data['holderName'],
+            $data['expirationMonth'],
+            $data['expirationYear'],
+            $user
+        );
+
+//        $encryptedAesKey     = $data['encryptedAESKey'];
+//        $encryptedNumber     = $data['encryptedCardNumber'];
+//        $encryptedCvv        = $data['encryptedCvv'];
+//        $encryptedHolderName = $data['encryptedHolderName'];
+//        $expirationMonth     = $data['expirationMonth'];
+//        $expirationYear      = $data['expirationYear'];
+//
+//        try {
+//            $aesKey     = $this->encryptionService->decryptAESKeyWithPrivateKey($encryptedAesKey);
+//
+//            $number     = $this->encryptionService->decryptWithAES($encryptedNumber, $aesKey);
+//            $cvv        = $this->encryptionService->decryptWithAES($encryptedCvv, $aesKey);
+//            $holderName = $this->encryptionService->decryptWithAES($encryptedHolderName, $aesKey);
+//            dd($number, $cvv, $holderName);
+//
+//            $cardService->store($number, $cvv, $holderName, $expirationMonth, $expirationYear, $user);
+//        } catch (Exception $e) {
+//            dd($e);
+//            return new JsonResponse(['success' => false, 'message' => 'Une erreur est survenue lors de l\'enregistrement de la carte de crédit.'], 500);
+//        }
+
+        return new JsonResponse(['success' => true, 'message' => 'Carte de crédit enregistrée avec succès.']);
     }
 }

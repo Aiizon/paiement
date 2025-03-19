@@ -33,12 +33,12 @@ class AppFixtures extends Fixture
     {
         $user = new User();
         $user->setEmail('user@example.com');
-        $user->setPassword($this->hasher->hashPassword($user, 'Not24get'));
+        $user->setPassword($this->hasher->hashPassword($user, 'JqxddVm8@Cqm59BhKUWshXHm@!Scs'));
         $user->setRoles(['ROLE_USER']);
 
         $admin = new User();
         $admin->setEmail('admin@example.com');
-        $admin->setPassword($this->hasher->hashPassword($admin, 'Not24get'));
+        $admin->setPassword($this->hasher->hashPassword($admin, 'u0dmZY0^Ayb1D4D*4jQKGN37PZj9!'));
         $admin->setRoles(['ROLE_ADMIN', 'ROLE_USER']);
 
         $manager->persist($user);
